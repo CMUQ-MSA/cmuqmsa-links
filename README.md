@@ -1,36 +1,141 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# CMUQ MSA Links
 
-## Getting Started
+> A Linktree-style link aggregator for the Carnegie Mellon University Qatar Muslim Students Association.
 
-First, run the development server:
+![License](https://img.shields.io/badge/license-MIT-blue.svg)
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+## Architecture
+
+```
+┌────────────┐      ┌──────────────┐      ┌───────────────┐
+│   nginx    │ ───▶ │   FastAPI    │ ───▶ │  SQLite DB    │
+│ (port 80)  │      │  (port 8000) │      │  (data/       │
+│ serves SPA │      │  REST API    │      │   links.db)   │
+└────────────┘      └──────────────┘      └───────────────┘
+    ▲
+    │ static files
+┌────────────┐
+│  React     │
+│  (Vite)    │
+│  build     │
+└────────────┘
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+| Layer     | Tech                                  |
+| --------- | ------------------------------------- |
+| Frontend  | React 18 + Vite + Tailwind + Framer Motion |
+| Backend   | FastAPI + SQLAlchemy + SQLite          |
+| Auth      | Master-password → signed cookie        |
+| Icons     | Lucide React (dynamic by name)         |
+| Proxy     | nginx:alpine                           |
+| Deploy    | Docker Compose (3 services)            |
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Quick Start
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### Prerequisites
+- Docker & Docker Compose
 
-## Learn More
+### Run
+```bash
+# 1. Copy and edit the env file
+cp .env.example .env
+# Edit .env → set ADMIN_PASSWORD and SECRET_KEY
 
-To learn more about Next.js, take a look at the following resources:
+# 2. Deploy
+./deploy.sh
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+# Site is now live at http://localhost
+# Admin dashboard at http://localhost/admin
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+### Local Development (no Docker)
 
-## Deploy on Vercel
+**Backend:**
+```bash
+cd backend
+python -m venv .venv && source .venv/bin/activate
+pip install -r requirements.txt
+mkdir -p data
+uvicorn app.main:app --reload --port 8000
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+**Frontend:**
+```bash
+cd frontend
+npm install
+npm run dev
+# → http://localhost:5173  (API proxied to :8000)
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Environment Variables
+
+| Variable         | Description                        | Default              |
+| ---------------- | ---------------------------------- | -------------------- |
+| `SECRET_KEY`     | Signs session cookies              | `change-me`          |
+| `DEBUG`          | Enable debug logging               | `false`              |
+| `DATABASE_URL`   | SQLite connection string           | `sqlite:///./data/links.db` |
+| `ADMIN_PASSWORD` | Master password for `/admin`       | `changeme123`        |
+
+## API Endpoints
+
+| Method   | Path                  | Auth   | Description                |
+| -------- | --------------------- | ------ | -------------------------- |
+| `GET`    | `/api/links`          | Public | Visible links (ordered)    |
+| `GET`    | `/api/links/all`      | Admin  | All links (incl. hidden)   |
+| `POST`   | `/api/links`          | Admin  | Create a link              |
+| `PUT`    | `/api/links/:id`      | Admin  | Update a link              |
+| `DELETE` | `/api/links/:id`      | Admin  | Delete a link              |
+| `PUT`    | `/api/links/reorder/batch` | Admin | Reorder links          |
+| `POST`   | `/api/auth/login`     | —      | Login (set cookie)         |
+| `POST`   | `/api/auth/logout`    | —      | Logout (clear cookie)      |
+| `GET`    | `/api/auth/me`        | Admin  | Check session              |
+| `GET`    | `/api/health`         | Public | Health check               |
+
+## Project Structure
+
+```
+cmuqmsa-links/
+├── backend/
+│   ├── Dockerfile
+│   ├── requirements.txt
+│   └── app/
+│       ├── main.py            # FastAPI app + seed data
+│       ├── config.py          # Pydantic settings
+│       ├── database.py        # SQLAlchemy engine
+│       ├── models.py          # Link + SiteConfig models
+│       ├── schemas.py         # Pydantic request schemas
+│       ├── middleware/
+│       │   └── auth.py        # Cookie-based admin auth
+│       └── routers/
+│           ├── auth.py        # Login/logout/me
+│           └── links.py       # CRUD + reorder
+├── frontend/
+│   ├── Dockerfile
+│   ├── package.json
+│   ├── vite.config.ts
+│   ├── tailwind.config.js
+│   ├── index.html
+│   └── src/
+│       ├── main.tsx
+│       ├── App.tsx
+│       ├── api/client.ts      # Typed API client
+│       ├── types/index.ts
+│       ├── styles/globals.css
+│       ├── components/
+│       │   ├── Header.tsx
+│       │   ├── LinkCard.tsx
+│       │   └── SocialBar.tsx
+│       └── pages/
+│           ├── PublicPage.tsx  # "/"  — the linktree
+│           └── AdminPage.tsx  # "/admin" — link manager
+├── nginx/
+│   └── nginx.conf
+├── docker-compose.yml
+├── deploy.sh
+├── .env.example
+└── README.md
+```
+
+## License
+
+MIT
