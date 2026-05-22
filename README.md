@@ -48,6 +48,8 @@ cp .env.example .env
 # Admin dashboard at http://localhost/admin
 ```
 
+In CMUQ-MSA production, this app is intended to run at **links.cmuqmsa.org**. The central `cmuqmsa-infra` Caddy router sends that hostname to this app's nginx service on internal port `80`; nginx serves the React frontend and proxies `/api` to FastAPI.
+
 ### Local Development (no Docker)
 
 **Backend:**
