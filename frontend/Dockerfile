@@ -12,4 +12,4 @@ RUN npm run build
 # Production stage — copy built files to a shared volume
 FROM alpine:latest
 COPY --from=build /app/dist /dist
-CMD ["cp", "-r", "/dist/.", "/output/"]
+CMD ["sh", "-c", "find /output -mindepth 1 -maxdepth 1 -exec rm -rf {} + && cp -r /dist/. /output/"]
