@@ -1,7 +1,10 @@
 from fastapi import FastAPI
+from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 import logging
+import os
+from sqlalchemy import text
 
 from app.database import Base, engine, SessionLocal
 from app.config import get_settings
@@ -85,6 +88,26 @@ SEED_CONFIG = {
 }
 
 
+def validate_production_config():
+    if settings.DEBUG:
+        return
+    placeholder_secret_keys = {
+        "change-me",
+        "change-this-to-a-random-string-at-least-32-chars",
+        "replace-with-32-plus-random-chars",
+    }
+    if settings.SECRET_KEY in placeholder_secret_keys or len(settings.SECRET_KEY) < 32:
+        raise RuntimeError("SECRET_KEY must be a non-placeholder 32+ character value in production.")
+    if settings.ADMIN_PASSWORD in {"changeme123", "replace-with-secure-password"} or len(settings.ADMIN_PASSWORD) < 12:
+        raise RuntimeError("ADMIN_PASSWORD must be changed to a strong value in production.")
+
+
+def configured_origins():
+    if settings.DEBUG:
+        return ["http://localhost:5173", "http://localhost:3000", "http://localhost"]
+    return [origin.strip() for origin in settings.ALLOWED_ORIGINS.split(",") if origin.strip()]
+
+
 def init_db():
     """Create tables and seed initial data."""
     Base.metadata.create_all(bind=engine)
@@ -118,6 +141,7 @@ def init_db():
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     logger.info("Starting CMUQ MSA Links backend...")
+    validate_production_config()
     init_db()
     yield
     logger.info("Shutting down...")
@@ -128,12 +152,15 @@ app = FastAPI(
     description="Linktree clone for CMU Qatar Muslim Students Association",
     version="2.0.0",
     lifespan=lifespan,
+    docs_url="/docs" if settings.DEBUG else None,
+    redoc_url="/redoc" if settings.DEBUG else None,
+    openapi_url="/openapi.json" if settings.DEBUG else None,
 )
 
 # CORS — only needed for dev (in prod nginx proxies same-origin)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://localhost:3000", "http://localhost"],
+    allow_origins=configured_origins(),
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -150,4 +177,27 @@ app.include_router(qr_router)
 
 @app.get("/api/health")
 async def health_check():
-    return {"status": "healthy"}
+    db_ok = True
+    uploads_ok = True
+    try:
+        with engine.connect() as conn:
+            conn.execute(text("SELECT 1"))
+    except Exception:
+        db_ok = False
+
+    upload_dir = "/app/data/uploads"
+    try:
+        os.makedirs(upload_dir, exist_ok=True)
+        uploads_ok = os.access(upload_dir, os.W_OK)
+    except Exception:
+        uploads_ok = False
+
+    healthy = db_ok and uploads_ok
+    return JSONResponse(
+        status_code=200 if healthy else 503,
+        content={
+            "status": "healthy" if healthy else "unhealthy",
+            "database": "ok" if db_ok else "error",
+            "uploads": "ok" if uploads_ok else "error",
+        },
+    )

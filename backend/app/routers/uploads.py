@@ -1,7 +1,6 @@
 import os
 import re
 import uuid
-import shutil
 from fastapi import APIRouter, Depends, UploadFile, File, HTTPException
 from fastapi.responses import FileResponse
 
@@ -11,9 +10,18 @@ router = APIRouter(prefix="/api/uploads", tags=["uploads"])
 
 UPLOAD_DIR = "/app/data/uploads"
 ALLOWED_EXTENSIONS = {
-    ".png", ".jpg", ".jpeg", ".gif", ".webp", ".svg",  # images
+    ".png", ".jpg", ".jpeg", ".gif", ".webp",          # images
     ".pdf",                                              # documents
     ".ico",                                              # favicon
+}
+ALLOWED_CONTENT_TYPES = {
+    ".png": {"image/png"},
+    ".jpg": {"image/jpeg"},
+    ".jpeg": {"image/jpeg"},
+    ".gif": {"image/gif"},
+    ".webp": {"image/webp"},
+    ".pdf": {"application/pdf"},
+    ".ico": {"image/vnd.microsoft.icon", "image/x-icon"},
 }
 MAX_FILE_SIZE = 10 * 1024 * 1024  # 10 MB
 
@@ -37,6 +45,8 @@ async def upload_file(
             status_code=400,
             detail=f"File type '{ext}' not allowed. Allowed: {', '.join(sorted(ALLOWED_EXTENSIONS))}",
         )
+    if file.content_type not in ALLOWED_CONTENT_TYPES.get(ext, set()):
+        raise HTTPException(status_code=400, detail="File content type does not match extension")
 
     # Validate size
     contents = await file.read()
@@ -73,7 +83,7 @@ async def serve_file(filename: str):
     filepath = _safe_path(filename)
     if not os.path.isfile(filepath):
         raise HTTPException(status_code=404, detail="File not found")
-    return FileResponse(filepath)
+    return FileResponse(filepath, headers={"X-Content-Type-Options": "nosniff"})
 
 
 @router.delete("/{filename}", status_code=204)
@@ -103,4 +113,3 @@ async def list_files(_admin=Depends(require_admin)):
                 "size": os.path.getsize(filepath),
             })
     return sorted(files, key=lambda x: x["display_name"].lower())
-

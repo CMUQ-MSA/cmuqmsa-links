@@ -1,0 +1,14 @@
+.git
+.gitignore
+.env
+.env.*
+data
+backups
+logs
+*.log
+backend
+frontend/node_modules
+frontend/dist
+frontend/coverage
+docker-compose.yml
+README.md
