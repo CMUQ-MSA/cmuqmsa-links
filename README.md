@@ -2,8 +2,6 @@
 
 > A Linktree-style link aggregator for the Carnegie Mellon University Qatar Muslim Students Association.
 
-> **Production:** Deploy **links.cmuqmsa.org** from [cmuqmsa-infra](https://github.com/CMUQ-MSA/cmuqmsa-infra), not this repo’s `docker-compose.yml`. The per-app compose file is legacy and can bind host ports that conflict with unified infra (Caddy on `localhost:8080`). Use it only when debugging this app alone.
-
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
 
 ## Architecture
@@ -50,7 +48,7 @@ cp .env.example .env
 # Admin dashboard at http://localhost:8080/admin
 ```
 
-In CMUQ-MSA production, this app is intended to run at **links.cmuqmsa.org**. The central `cmuqmsa-infra` Caddy router sends that hostname to this app's nginx service on internal port `8080`; nginx serves the React frontend and proxies `/api` to FastAPI.
+Nginx listens on port **8080** in the Docker stack and proxies `/api` to FastAPI on port **8000**.
 
 ### Local Development (no Docker)
 
@@ -78,7 +76,7 @@ npm run dev
 | `SECRET_KEY`     | Signs session cookies              | `change-me`          |
 | `DEBUG`          | Enable debug logging               | `false`              |
 | `USE_HTTPS`      | Mark admin cookie secure in production | `false`          |
-| `ALLOWED_ORIGINS` | Comma-separated CORS origins       | `https://links.cmuqmsa.org` |
+| `ALLOWED_ORIGINS` | Comma-separated CORS origins       | `https://your-public-host.example` |
 | `DATABASE_URL`   | SQLite connection string           | `sqlite:///./data/links.db` |
 | `ADMIN_PASSWORD` | Master password for `/admin`       | `changeme123`        |
 
