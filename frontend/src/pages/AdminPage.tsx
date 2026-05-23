@@ -29,7 +29,7 @@ function FilePicker({
   }, []);
 
   const isImage = (filename: string) =>
-    /\.(png|jpg|jpeg|gif|webp|svg|ico)$/i.test(filename);
+    /\.(png|jpg|jpeg|gif|webp|ico)$/i.test(filename);
 
   const filtered =
     accept === "image" ? files.filter((f) => isImage(f.filename)) : files;
@@ -74,7 +74,7 @@ function FilePicker({
             Upload new file
             <input
               type="file"
-              accept={accept === "image" ? "image/*" : ".png,.jpg,.jpeg,.gif,.webp,.svg,.pdf,.ico"}
+              accept={accept === "image" ? ".png,.jpg,.jpeg,.gif,.webp,.ico" : ".png,.jpg,.jpeg,.gif,.webp,.pdf,.ico"}
               className="hidden"
               onChange={handleUpload}
             />
@@ -514,7 +514,7 @@ function LinkEditForm({
           </span>
           <input
             type="file"
-            accept="image/*"
+            accept=".png,.jpg,.jpeg,.gif,.webp,.ico"
             className="hidden"
             onChange={handleThumbnailUpload}
           />
@@ -714,7 +714,7 @@ function AddLinkForm({ onAdd }: { onAdd: (data: any) => void }) {
           </span>
           <input
             type="file"
-            accept="image/*"
+            accept=".png,.jpg,.jpeg,.gif,.webp,.ico"
             className="hidden"
             onChange={handleThumbnailUpload}
           />
@@ -835,7 +835,7 @@ function SettingsTab() {
               </span>
               <input
                 type="file"
-                accept="image/*"
+                accept=".png,.jpg,.jpeg,.gif,.webp,.ico"
                 className="hidden"
                 onChange={handleLogoUpload}
               />
@@ -1256,7 +1256,7 @@ function FilesTab() {
   };
 
   const isImage = (filename: string) =>
-    /\.(png|jpg|jpeg|gif|webp|svg|ico)$/i.test(filename);
+    /\.(png|jpg|jpeg|gif|webp|ico)$/i.test(filename);
 
   if (loading) {
     return (
@@ -1277,7 +1277,7 @@ function FilesTab() {
         Upload File (images, PDFs, up to 10 MB)
         <input
           type="file"
-          accept=".png,.jpg,.jpeg,.gif,.webp,.svg,.pdf,.ico"
+          accept=".png,.jpg,.jpeg,.gif,.webp,.pdf,.ico"
           className="hidden"
           onChange={handleUpload}
         />
