@@ -6,9 +6,12 @@ import type {
 
 const BASE = "/api";
 
-async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
+interface BaseRequestOptions extends RequestInit {
+  credentials?: RequestCredentials;
+}
+
+async function baseRequest<T>(path: string, options: BaseRequestOptions): Promise<T> {
   const res = await fetch(`${BASE}${path}`, {
-    credentials: "include",
     headers: {
       "Content-Type": "application/json",
       ...(options.headers || {}),
@@ -26,12 +29,50 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   return res.json();
 }
 
+// Admin reads/writes: cookies attached, CSRF tied to session.
+function request<T>(path: string, options: RequestInit = {}): Promise<T> {
+  return baseRequest<T>(path, { credentials: "include", ...options });
+}
+
+// Public reads: no cookies, no admin session. Cacheable by browser/CDN.
+// `mode: "cors"` + omitted credentials lets us match a `<link rel="preload"
+// as="fetch" ... crossorigin>` hint in index.html.
+function requestPublic<T>(path: string, options: RequestInit = {}): Promise<T> {
+  return baseRequest<T>(path, {
+    credentials: "omit",
+    mode: "cors",
+    ...options,
+  });
+}
+
 // ── Public ──────────────────────────────────────────────
-export const getVisibleLinks = () => request<Link[]>("/links");
-export const getSiteConfig = () => request<SiteConfig>("/config");
-export const getSocials = () => request<SocialLink[]>("/socials");
+export interface BootstrapPayload {
+  config: SiteConfig;
+  links: Link[];
+  socials: SocialLink[];
+}
+
+// Single round-trip for the public landing page. Matches the preload hint
+// in index.html. Falls back to individual fetches if the endpoint is
+// missing (e.g. running against an older backend during a partial deploy).
+export async function getBootstrap(): Promise<BootstrapPayload> {
+  try {
+    return await requestPublic<BootstrapPayload>("/public/bootstrap");
+  } catch (err) {
+    const [config, links, socials] = await Promise.all([
+      getSiteConfig(),
+      getVisibleLinks(),
+      getSocials(),
+    ]);
+    return { config, links, socials };
+  }
+}
+
+export const getVisibleLinks = () => requestPublic<Link[]>("/links");
+export const getSiteConfig = () => requestPublic<SiteConfig>("/config");
+export const getSocials = () => requestPublic<SocialLink[]>("/socials");
 export const trackClick = (id: string) =>
-  request<{ clicks: number }>(`/links/${id}/click`, { method: "POST" });
+  requestPublic<{ clicks: number }>(`/links/${id}/click`, { method: "POST" });
 
 // ── Auth ────────────────────────────────────────────────
 export const login = (password: string) =>

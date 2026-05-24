@@ -9,6 +9,12 @@
     <meta property="og:description" content="Links and resources from the Muslim Students Association at CMU Qatar" />
     <meta property="og:type" content="website" />
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🕌</text></svg>" />
+    <!-- Performance preloads: kick off the bootstrap fetch and logo image
+         during HTML parse so they overlap with the JS bundle download.
+         `crossorigin` on the fetch hint matches the `credentials: "omit"`
+         + `mode: "cors"` used by getBootstrap() in src/api/client.ts. -->
+    <link rel="preload" as="fetch" href="/api/public/bootstrap" crossorigin />
+    <link rel="preload" as="image" href="/api/branding/logo" fetchpriority="high" />
   </head>
   <body>
     <div id="root"></div>

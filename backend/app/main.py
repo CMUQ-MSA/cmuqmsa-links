@@ -17,6 +17,7 @@ from app.routers import (
     socials_router,
     uploads_router,
     qr_router,
+    public_router,
 )
 
 settings = get_settings()
@@ -184,6 +185,7 @@ app.include_router(config_router)
 app.include_router(socials_router)
 app.include_router(uploads_router)
 app.include_router(qr_router)
+app.include_router(public_router)
 
 
 @app.get("/api/health")

@@ -26,7 +26,7 @@ export default function LinkCard({ link, index, accent = "#D4AF37" }: Props) {
       className="link-card-enter bg-white/95 backdrop-blur-sm border-2 rounded-xl shadow-lg p-4 transition-all duration-300 ease-out cursor-pointer group flex items-center gap-4 hover:scale-[1.02] active:scale-[0.98]"
       style={{
         borderColor: `${accent}4D`,
-        animationDelay: `${index * 80}ms`,
+        animationDelay: `${index * 25}ms`,
       }}
       onMouseEnter={(e) => {
         e.currentTarget.style.borderColor = accent;

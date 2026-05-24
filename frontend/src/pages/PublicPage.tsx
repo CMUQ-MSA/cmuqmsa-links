@@ -1,61 +1,60 @@
 import { useEffect, useState } from "react";
 import type { Link, SiteConfig, SocialLink as SocialLinkType } from "../types";
-import { getVisibleLinks, getSiteConfig, getSocials } from "../api/client";
+import { getBootstrap } from "../api/client";
 import Header from "../components/Header";
 import LinkCard from "../components/LinkCard";
 import SocialBar from "../components/SocialBar";
 import QrCodeButton from "../components/QrCodeButton";
 import { Loader2 } from "lucide-react";
 
-const DEFAULT_CONFIG: SiteConfig = {
-  site_title: "CMUQ MSA",
-  site_bio: "Serving the Muslim community at Carnegie Mellon University in Qatar",
-  logo_url: "",
-  logo_shape: "circle",
-  primary_color: "#990000",
-  secondary_color: "#D4AF37",
-  background_style: "gradient",
-};
+// Visual defaults used ONLY for chrome (background colour, accent) before
+// the bootstrap call returns. We intentionally do NOT use the real
+// `site_title` / `site_bio` / `logo_url` here — those would cause a flash
+// of placeholder text before the DB value paints.
+const FALLBACK_PRIMARY = "#990000";
+const FALLBACK_ACCENT = "#D4AF37";
 
 export default function PublicPage() {
-  const [links, setLinks] = useState<Link[]>([]);
-  const [config, setConfig] = useState<SiteConfig>(DEFAULT_CONFIG);
-  const [socials, setSocials] = useState<SocialLinkType[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [links, setLinks] = useState<Link[] | null>(null);
+  const [config, setConfig] = useState<SiteConfig | null>(null);
+  const [socials, setSocials] = useState<SocialLinkType[] | null>(null);
   const [error, setError] = useState("");
 
   useEffect(() => {
-    Promise.all([getVisibleLinks(), getSiteConfig(), getSocials()])
-      .then(([linksData, configData, socialsData]) => {
-        setLinks(linksData);
-        setConfig({ ...DEFAULT_CONFIG, ...configData });
-        setSocials(socialsData);
+    getBootstrap()
+      .then(({ config: c, links: l, socials: s }) => {
+        setConfig(c);
+        setLinks(l);
+        setSocials(s);
       })
-      .catch((e) => setError(e.message))
-      .finally(() => setLoading(false));
+      .catch((e) => setError(e.message));
   }, []);
 
-  // Dynamic background based on config
+  const primary = config?.primary_color || FALLBACK_PRIMARY;
+  const accent = config?.secondary_color || FALLBACK_ACCENT;
+
+  // Dynamic background — uses fallback primary until config arrives so the
+  // page doesn't flash white. The colour difference between fallback and
+  // a custom palette is small enough that it isn't jarring.
   const bgStyle = (() => {
-    const p = config.primary_color || "#990000";
-    switch (config.background_style) {
+    switch (config?.background_style) {
       case "solid":
-        return { backgroundColor: p };
+        return { backgroundColor: primary };
       case "noise":
         return {
-          backgroundColor: p,
+          backgroundColor: primary,
           backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.06'/%3E%3C/svg%3E")`,
         };
-      default: // gradient
+      default: // gradient (also used while config is null)
         return {
-          background: `linear-gradient(135deg, ${p} 0%, ${adjustBrightness(p, -30)} 100%)`,
+          background: `linear-gradient(135deg, ${primary} 0%, ${adjustBrightness(primary, -30)} 100%)`,
         };
     }
   })();
 
   const pageUrl = typeof window !== "undefined" ? window.location.origin : "";
 
-  const accent = config.secondary_color || "#D4AF37";
+  const loading = config === null || links === null || socials === null;
 
   return (
     <div
@@ -65,7 +64,7 @@ export default function PublicPage() {
       <div className="w-full max-w-md">
         <Header config={config} />
 
-        {loading && (
+        {loading && !error && (
           <div className="flex justify-center py-12">
             <Loader2 className="w-7 h-7 animate-spin" style={{ color: accent }} />
           </div>
@@ -77,19 +76,23 @@ export default function PublicPage() {
           </p>
         )}
 
-        <div className="flex flex-col gap-3">
-          {links.map((link, i) => (
-            <LinkCard key={link.id} link={link} index={i} accent={accent} />
-          ))}
-        </div>
+        {links && (
+          <div className="flex flex-col gap-3">
+            {links.map((link, i) => (
+              <LinkCard key={link.id} link={link} index={i} accent={accent} />
+            ))}
+          </div>
+        )}
 
         {/* Social icons */}
-        <div className="mt-8">
-          <SocialBar socials={socials} accent={accent} />
-        </div>
+        {socials && socials.length > 0 && (
+          <div className="mt-8">
+            <SocialBar socials={socials} accent={accent} />
+          </div>
+        )}
 
-        {/* QR code */}
-        {pageUrl && (
+        {/* QR code — only renders once we know the accent palette */}
+        {pageUrl && config && (
           <div className="flex justify-center mt-4">
             <QrCodeButton pageUrl={pageUrl} color={config.primary_color} />
           </div>
