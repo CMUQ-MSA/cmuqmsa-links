@@ -1,4 +1,3 @@
-import { motion } from "framer-motion";
 import type { SiteConfig } from "../types";
 
 interface Props {
@@ -16,13 +15,7 @@ export default function Header({ config }: Props) {
   const shapeClass = SHAPE_CLASSES[config.logo_shape] || "rounded-full";
 
   return (
-    <motion.header
-      className="flex flex-col items-center text-center mb-10"
-      initial={{ opacity: 0, y: -20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5 }}
-    >
-      {/* Logo */}
+    <header className="header-enter flex flex-col items-center text-center mb-10">
       <div
         className={`w-24 h-24 ${shapeClass} bg-white/10 border-2 flex items-center justify-center mb-5 overflow-hidden`}
         style={{ borderColor: `${accent}66`, boxShadow: `0 0 15px ${accent}66` }}
@@ -32,6 +25,9 @@ export default function Header({ config }: Props) {
             src={config.logo_url}
             alt={config.site_title}
             className="w-full h-full object-cover"
+            loading="eager"
+            decoding="async"
+            fetchPriority="high"
           />
         ) : (
           <span className="text-3xl font-extrabold tracking-tighter select-none" style={{ color: accent }}>
@@ -46,6 +42,6 @@ export default function Header({ config }: Props) {
       <p className="text-white/70 mt-2 text-sm sm:text-base max-w-xs">
         {config.site_bio || "Serving the Muslim community at Carnegie Mellon University in Qatar"}
       </p>
-    </motion.header>
+    </header>
   );
 }

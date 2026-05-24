@@ -3,11 +3,18 @@ import { QrCode, X, Download } from "lucide-react";
 
 interface Props {
   pageUrl: string;
+  color?: string;
 }
 
-export default function QrCodeButton({ pageUrl }: Props) {
+export default function QrCodeButton({ pageUrl, color }: Props) {
   const [open, setOpen] = useState(false);
-  const qrUrl = `/api/qr?url=${encodeURIComponent(pageUrl)}`;
+  const query = new URLSearchParams({ url: pageUrl });
+
+  if (color) {
+    query.set("color", color);
+  }
+
+  const qrUrl = `/api/qr?${query.toString()}`;
 
   return (
     <>

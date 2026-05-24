@@ -13,29 +13,18 @@ services:
         max-size: "10m"
         max-file: "3"
 
-  frontend-builder:
-    build: ./frontend
-    volumes:
-      - frontend_dist:/output
-
   nginx:
-    image: nginx:alpine
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
     ports:
-      - "80:80"
-    volumes:
-      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
-      - frontend_dist:/usr/share/nginx/html:ro
+      - "127.0.0.1:8080:8080"
     depends_on:
-      frontend-builder:
-        condition: service_completed_successfully
       backend:
-        condition: service_started
+        condition: service_healthy
     restart: unless-stopped
     logging:
       driver: "json-file"
       options:
         max-size: "10m"
         max-file: "3"
-
-volumes:
-  frontend_dist:

@@ -1,147 +1,139 @@
 # CMUQ MSA Links
 
-> A Linktree-style link aggregator for the Carnegie Mellon University Qatar Muslim Students Association.
+A lightweight link hub for the Carnegie Mellon University in Qatar Muslim Students Association.
 
-![License](https://img.shields.io/badge/license-MIT-blue.svg)
+## Stack
 
-## Architecture
 
+| Layer          | Tech                                         |
+| -------------- | -------------------------------------------- |
+| Frontend       | React 18 + Vite + Tailwind CSS               |
+| Backend        | FastAPI + SQLAlchemy + SQLite                |
+| Auth           | Signed admin session cookie                  |
+| Static serving | `nginxinc/nginx-unprivileged` on port `8080` |
+| Deployment     | Docker Compose (`backend` + `nginx`)         |
+
+
+The public site and admin UI are served by the same nginx container. `/api/*` is proxied to the FastAPI backend.
+
+## Runtime Architecture
+
+```text
+browser
+  -> nginx (127.0.0.1:8080 -> container :8080)
+      -> static React build
+      -> /api/* -> backend:8000
+          -> SQLite at ./data/links.db
+          -> uploads at ./data/uploads/
 ```
-┌────────────┐      ┌──────────────┐      ┌───────────────┐
-│   nginx    │ ───▶ │   FastAPI    │ ───▶ │  SQLite DB    │
-│ (port 8080)│      │  (port 8000) │      │  (data/       │
-│ serves SPA │      │  REST API    │      │   links.db)   │
-└────────────┘      └──────────────┘      └───────────────┘
-    ▲
-    │ static files
-┌────────────┐
-│  React     │
-│  (Vite)    │
-│  build     │
-└────────────┘
-```
-
-| Layer     | Tech                                  |
-| --------- | ------------------------------------- |
-| Frontend  | React 18 + Vite + Tailwind + Framer Motion |
-| Backend   | FastAPI + SQLAlchemy + SQLite          |
-| Auth      | Master-password → signed cookie        |
-| Icons     | Lucide React (dynamic by name)         |
-| Proxy     | nginx-unprivileged                      |
-| Deploy    | Docker Compose (2 services)             |
 
 ## Quick Start
 
-### Prerequisites
-- Docker & Docker Compose
+1. Create the env file:
 
-### Run
 ```bash
-# 1. Copy and edit the env file
 cp .env.example .env
-# Edit .env → set ADMIN_PASSWORD and SECRET_KEY
-
-# 2. Deploy
-./deploy.sh
-
-# Site is now live at http://localhost:8080
-# Admin dashboard at http://localhost:8080/admin
 ```
 
-Nginx listens on port **8080** in the Docker stack and proxies `/api` to FastAPI on port **8000**.
+1. Set real values for:
 
-### Local Development (no Docker)
+- `SECRET_KEY`
+- `ADMIN_PASSWORD`
+- `ALLOWED_ORIGINS`
 
-**Backend:**
+1. Start the app:
+
+```bash
+./deploy.sh
+```
+
+Then open:
+
+- public site: `http://localhost:8080/`
+- admin: `http://localhost:8080/admin`
+
+## Docker Compose
+
+The standalone repo uses one compose stack:
+
+- `backend`: FastAPI on internal port `8000`
+- `nginx`: immutable frontend + reverse proxy on `127.0.0.1:8080`
+
+Useful commands:
+
+```bash
+docker compose up --build -d
+docker compose logs -f
+docker compose down
+```
+
+`deploy.sh` is a small wrapper around those compose operations:
+
+```bash
+./deploy.sh            # rebuild changed services and restart
+./deploy.sh --frontend # rebuild nginx/frontend image without cache
+./deploy.sh --full     # rebuild all images without cache
+./deploy.sh --wipe     # rebuild all images and delete ./data/links.db
+```
+
+## Local Development
+
+### Backend
+
 ```bash
 cd backend
-python -m venv .venv && source .venv/bin/activate
+python -m venv .venv
+source .venv/bin/activate
 pip install -r requirements.txt
-mkdir -p data
+mkdir -p data/uploads
 uvicorn app.main:app --reload --port 8000
 ```
 
-**Frontend:**
+### Frontend
+
 ```bash
 cd frontend
 npm install
 npm run dev
-# → http://localhost:5173  (API proxied to :8000)
 ```
+
+The Vite dev server proxies API traffic to `http://localhost:8000`.
 
 ## Environment Variables
 
-| Variable         | Description                        | Default              |
-| ---------------- | ---------------------------------- | -------------------- |
-| `SECRET_KEY`     | Signs session cookies              | `change-me`          |
-| `DEBUG`          | Enable debug logging               | `false`              |
-| `USE_HTTPS`      | Mark admin cookie secure in production | `false`          |
-| `ALLOWED_ORIGINS` | Comma-separated CORS origins       | `https://your-public-host.example` |
-| `DATABASE_URL`   | SQLite connection string           | `sqlite:///./data/links.db` |
-| `ADMIN_PASSWORD` | Master password for `/admin`       | `changeme123`        |
 
-Production startup fails if `SECRET_KEY` or `ADMIN_PASSWORD` still use placeholder/default values.
+| Variable          | Required | Description                                                            |
+| ----------------- | -------- | ---------------------------------------------------------------------- |
+| `SECRET_KEY`      | Yes      | Session signing key. Must be long and random in production.            |
+| `ADMIN_PASSWORD`  | Yes      | Admin password bootstrap value and login secret.                       |
+| `ALLOWED_ORIGINS` | Yes      | Comma-separated list of allowed browser origins.                       |
+| `DATABASE_URL`    | No       | Defaults to `sqlite:///./data/links.db`.                               |
+| `DEBUG`           | No       | Enables debug logging when `true`.                                     |
+| `USE_HTTPS`       | No       | Marks the admin cookie `Secure` when `true`. Use `true` in production. |
 
-## API Endpoints
 
-| Method   | Path                  | Auth   | Description                |
-| -------- | --------------------- | ------ | -------------------------- |
-| `GET`    | `/api/links`          | Public | Visible links (ordered)    |
-| `GET`    | `/api/links/all`      | Admin  | All links (incl. hidden)   |
-| `POST`   | `/api/links`          | Admin  | Create a link              |
-| `PUT`    | `/api/links/:id`      | Admin  | Update a link              |
-| `DELETE` | `/api/links/:id`      | Admin  | Delete a link              |
-| `PUT`    | `/api/links/reorder/batch` | Admin | Reorder links          |
-| `POST`   | `/api/auth/login`     | —      | Login (set cookie)         |
-| `POST`   | `/api/auth/logout`    | —      | Logout (clear cookie)      |
-| `GET`    | `/api/auth/me`        | Admin  | Check session              |
-| `GET`    | `/api/health`         | Public | Health check               |
+Production startup is expected to fail if placeholder secrets are left in place.
 
-## Project Structure
+## Admin and Icons
 
-```
-cmuqmsa-links/
-├── backend/
-│   ├── Dockerfile
-│   ├── requirements.txt
-│   └── app/
-│       ├── main.py            # FastAPI app + seed data
-│       ├── config.py          # Pydantic settings
-│       ├── database.py        # SQLAlchemy engine
-│       ├── models.py          # Link + SiteConfig models
-│       ├── schemas.py         # Pydantic request schemas
-│       ├── middleware/
-│       │   └── auth.py        # Cookie-based admin auth
-│       └── routers/
-│           ├── auth.py        # Login/logout/me
-│           └── links.py       # CRUD + reorder
-├── frontend/
-│   ├── Dockerfile
-│   ├── package.json
-│   ├── vite.config.ts
-│   ├── tailwind.config.js
-│   ├── index.html
-│   └── src/
-│       ├── main.tsx
-│       ├── App.tsx
-│       ├── api/client.ts      # Typed API client
-│       ├── types/index.ts
-│       ├── styles/globals.css
-│       ├── components/
-│       │   ├── Header.tsx
-│       │   ├── LinkCard.tsx
-│       │   └── SocialBar.tsx
-│       └── pages/
-│           ├── PublicPage.tsx  # "/"  — the linktree
-│           └── AdminPage.tsx  # "/admin" — link manager
-├── nginx/
-│   └── nginx.conf
-├── docker-compose.yml
-├── deploy.sh
-├── .env.example
-└── README.md
-```
+The admin UI supports:
 
-## License
+- link CRUD
+- drag-and-drop reordering
+- file uploads
+- site branding and social links
+- QR code generation for the public page
 
-MIT
+Link icons now use a curated catalog. Admins choose icons from the built-in picker, and the backend validates icon ids on create/update. Existing invalid icon values are normalized to `link` on backend startup.
+
+## Health and Storage
+
+- backend health: `GET /api/health`
+- nginx health: `GET /healthz`
+- database file: `./data/links.db`
+- uploaded files: `./data/uploads/`
+
+## Production Notes
+
+- If you deploy this repo by itself behind a reverse proxy, proxy public traffic to `http://127.0.0.1:8080`.
+- Do not commit `.env` or real uploaded data.

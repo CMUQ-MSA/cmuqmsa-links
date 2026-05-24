@@ -1,0 +1,147 @@
+import type { LucideIcon } from "lucide-react";
+import {
+  Bus,
+  BookOpen,
+  Users,
+  Calendar,
+  Heart,
+  Link,
+  ExternalLink,
+  FileText,
+  Image as ImageIcon,
+  Home,
+  Mail,
+  MapPin,
+  Star,
+  Gift,
+  Coffee,
+  Music,
+  Video,
+  Camera,
+  Phone,
+  Globe,
+  Clock,
+  Map,
+  Utensils,
+  Moon,
+  Sun,
+  Sparkles,
+  Megaphone,
+  ClipboardList,
+  GraduationCap,
+  Building,
+  Ticket,
+  PartyPopper,
+  Church,
+  Bookmark,
+  Bell,
+  Info,
+  HelpCircle,
+  ShoppingBag,
+  CreditCard,
+  Wallet,
+  Plane,
+  Car,
+  Bike,
+  Train,
+  Ship,
+  Anchor,
+  Trophy,
+  Medal,
+  Flag,
+  Shield,
+  Lock,
+  Key,
+  Zap,
+  Flame,
+  Leaf,
+  TreePine,
+  Cloud,
+  Droplet,
+} from "lucide-react";
+
+export interface LinkIconOption {
+  id: string;
+  label: string;
+  Icon: LucideIcon;
+}
+
+export const LINK_ICON_OPTIONS: LinkIconOption[] = [
+  { id: "link", label: "Link", Icon: Link },
+  { id: "external-link", label: "External Link", Icon: ExternalLink },
+  { id: "bus", label: "Bus", Icon: Bus },
+  { id: "book-open", label: "Book Open", Icon: BookOpen },
+  { id: "users", label: "Users", Icon: Users },
+  { id: "calendar", label: "Calendar", Icon: Calendar },
+  { id: "heart", label: "Heart", Icon: Heart },
+  { id: "home", label: "Home", Icon: Home },
+  { id: "mail", label: "Mail", Icon: Mail },
+  { id: "map-pin", label: "Map Pin", Icon: MapPin },
+  { id: "star", label: "Star", Icon: Star },
+  { id: "gift", label: "Gift", Icon: Gift },
+  { id: "coffee", label: "Coffee", Icon: Coffee },
+  { id: "music", label: "Music", Icon: Music },
+  { id: "video", label: "Video", Icon: Video },
+  { id: "camera", label: "Camera", Icon: Camera },
+  { id: "phone", label: "Phone", Icon: Phone },
+  { id: "globe", label: "Globe", Icon: Globe },
+  { id: "clock", label: "Clock", Icon: Clock },
+  { id: "map", label: "Map", Icon: Map },
+  { id: "utensils", label: "Utensils", Icon: Utensils },
+  { id: "moon", label: "Moon", Icon: Moon },
+  { id: "sun", label: "Sun", Icon: Sun },
+  { id: "sparkles", label: "Sparkles", Icon: Sparkles },
+  { id: "megaphone", label: "Megaphone", Icon: Megaphone },
+  { id: "clipboard-list", label: "Clipboard List", Icon: ClipboardList },
+  { id: "graduation-cap", label: "Graduation Cap", Icon: GraduationCap },
+  { id: "building", label: "Building", Icon: Building },
+  { id: "ticket", label: "Ticket", Icon: Ticket },
+  { id: "party-popper", label: "Party Popper", Icon: PartyPopper },
+  { id: "church", label: "Church", Icon: Church },
+  { id: "bookmark", label: "Bookmark", Icon: Bookmark },
+  { id: "bell", label: "Bell", Icon: Bell },
+  { id: "info", label: "Info", Icon: Info },
+  { id: "help-circle", label: "Help Circle", Icon: HelpCircle },
+  { id: "shopping-bag", label: "Shopping Bag", Icon: ShoppingBag },
+  { id: "credit-card", label: "Credit Card", Icon: CreditCard },
+  { id: "wallet", label: "Wallet", Icon: Wallet },
+  { id: "plane", label: "Plane", Icon: Plane },
+  { id: "car", label: "Car", Icon: Car },
+  { id: "bike", label: "Bike", Icon: Bike },
+  { id: "train", label: "Train", Icon: Train },
+  { id: "ship", label: "Ship", Icon: Ship },
+  { id: "anchor", label: "Anchor", Icon: Anchor },
+  { id: "trophy", label: "Trophy", Icon: Trophy },
+  { id: "medal", label: "Medal", Icon: Medal },
+  { id: "flag", label: "Flag", Icon: Flag },
+  { id: "shield", label: "Shield", Icon: Shield },
+  { id: "lock", label: "Lock", Icon: Lock },
+  { id: "key", label: "Key", Icon: Key },
+  { id: "zap", label: "Zap", Icon: Zap },
+  { id: "flame", label: "Flame", Icon: Flame },
+  { id: "leaf", label: "Leaf", Icon: Leaf },
+  { id: "tree-pine", label: "Tree Pine", Icon: TreePine },
+  { id: "cloud", label: "Cloud", Icon: Cloud },
+  { id: "droplet", label: "Droplet", Icon: Droplet },
+  { id: "pdf", label: "PDF", Icon: FileText },
+  { id: "image", label: "Image", Icon: ImageIcon },
+];
+
+export const LINK_ICONS: Record<string, LucideIcon> = Object.fromEntries(
+  LINK_ICON_OPTIONS.map(({ id, Icon }) => [id, Icon])
+) as Record<string, LucideIcon>;
+
+export function isAllowedLinkIcon(name: string): boolean {
+  return name.trim().toLowerCase() in LINK_ICONS;
+}
+
+export function getLinkIcon(name: string): LucideIcon {
+  const key = name.trim().toLowerCase();
+  return LINK_ICONS[key] ?? Link;
+}
+
+export const TYPE_BADGE_ICONS = {
+  pdf: FileText,
+  image: ImageIcon,
+  embed: ExternalLink,
+} as const;

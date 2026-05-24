@@ -1,23 +1,19 @@
 import io
 import qrcode
-from fastapi import APIRouter, Query, Depends
+from fastapi import APIRouter, Query
 from fastapi.responses import StreamingResponse
-from sqlalchemy.orm import Session
-
-from app.database import get_db
-from app.routers.config import _get_config
-
 router = APIRouter(prefix="/api/qr", tags=["qr"])
+
+DEFAULT_QR_COLOR = "#990000"
 
 
 @router.get("")
 def generate_qr(
     url: str = Query(..., description="The URL to encode"),
-    db: Session = Depends(get_db),
+    color: str | None = Query(None, description="Hex fill color (optional)"),
 ):
     """Public: Generate a QR code PNG for any URL."""
-    config = _get_config(db)
-    fill = config.get("primary_color", "#990000")
+    fill = color if color and color.startswith("#") and len(color) in (4, 7) else DEFAULT_QR_COLOR
 
     qr = qrcode.QRCode(
         version=1,
@@ -34,4 +30,8 @@ def generate_qr(
     img.save(buf, format="PNG")
     buf.seek(0)
 
-    return StreamingResponse(buf, media_type="image/png")
+    return StreamingResponse(
+        buf,
+        media_type="image/png",
+        headers={"Cache-Control": "public, max-age=86400"},
+    )

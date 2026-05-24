@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback } from "react";
 import type { Link, SiteConfig, SocialLink, UploadedFile } from "../types";
 import { SOCIAL_PLATFORMS } from "../types";
 import * as api from "../api/client";
+import { LINK_ICON_OPTIONS, getLinkIcon, isAllowedLinkIcon } from "../lib/icons";
 import {
   LogOut, Plus, Trash2, Eye, EyeOff, ArrowUp, ArrowDown, Save, Lock,
   Loader2, Pencil, X, Settings, Link2, Users, Upload, BarChart3,
@@ -125,6 +126,108 @@ function FilePicker({
           )}
         </div>
       </div>
+    </div>
+  );
+}
+
+function IconPickerModal({
+  selected,
+  onSelect,
+  onClose,
+}: {
+  selected: string;
+  onSelect: (icon: string) => void;
+  onClose: () => void;
+}) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[85vh] flex flex-col">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+          <h3 className="text-base font-bold text-gray-800">Choose Icon</h3>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+        <div className="overflow-y-auto p-5">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+            {LINK_ICON_OPTIONS.map(({ id, label, Icon }) => {
+              const active = selected === id;
+              return (
+                <button
+                  key={id}
+                  type="button"
+                  onClick={() => {
+                    onSelect(id);
+                    onClose();
+                  }}
+                  className={`rounded-xl border-2 p-3 text-left transition-all ${
+                    active
+                      ? "border-gold bg-gold/10 shadow-sm"
+                      : "border-gray-200 hover:border-gold hover:shadow-sm"
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-lg bg-gray-50 flex items-center justify-center">
+                      <Icon className="w-5 h-5 text-gray-700" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-sm font-semibold text-gray-800 truncate">{label}</p>
+                      <p className="text-xs text-gray-500 truncate">{id}</p>
+                    </div>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function IconField({
+  value,
+  onChange,
+  dark = false,
+}: {
+  value: string;
+  onChange: (icon: string) => void;
+  dark?: boolean;
+}) {
+  const [open, setOpen] = useState(false);
+  const Icon = getLinkIcon(value || "link");
+  const buttonClass = dark
+    ? "border-white/20 text-white/80 hover:border-gold hover:text-gold"
+    : "border-gray-200 text-gray-700 hover:border-gold hover:text-gold";
+  const labelClass = dark ? "text-white/40" : "text-gray-400";
+
+  return (
+    <div>
+      {open && (
+        <IconPickerModal
+          selected={value || "link"}
+          onSelect={onChange}
+          onClose={() => setOpen(false)}
+        />
+      )}
+      <label className={`block text-xs font-medium mb-1 ${labelClass}`}>Icon</label>
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        className={`w-full rounded-xl border-2 px-3 py-2.5 transition-colors ${buttonClass}`}
+      >
+        <div className="flex items-center gap-3">
+          <div className={`w-9 h-9 rounded-lg flex items-center justify-center ${dark ? "bg-white/10" : "bg-gray-50"}`}>
+            <Icon className="w-5 h-5" />
+          </div>
+          <div className="min-w-0 text-left">
+            <p className="text-sm font-semibold truncate">
+              {LINK_ICON_OPTIONS.find((option) => option.id === value)?.label || "Link"}
+            </p>
+            <p className={`text-xs truncate ${dark ? "text-white/40" : "text-gray-500"}`}>{value || "link"}</p>
+          </div>
+        </div>
+      </button>
     </div>
   );
 }
@@ -387,10 +490,11 @@ function LinkEditForm({
   onSave: (id: string, data: Partial<Link>) => void;
   onCancel: () => void;
 }) {
+  const initialIcon = isAllowedLinkIcon(link.icon || "") ? link.icon : "link";
   const [title, setTitle] = useState(link.title);
   const [url, setUrl] = useState(link.url);
   const [description, setDescription] = useState(link.description);
-  const [icon, setIcon] = useState(link.icon);
+  const [icon, setIcon] = useState(initialIcon);
   const [thumbnailUrl, setThumbnailUrl] = useState(link.thumbnail_url);
   const [linkType, setLinkType] = useState(link.link_type);
   const [uploading, setUploading] = useState(false);
@@ -470,15 +574,7 @@ function LinkEditForm({
         onChange={(e) => setDescription(e.target.value)}
       />
       <div className="grid grid-cols-2 gap-3">
-        <div>
-          <label className="block text-xs font-medium text-gray-400 mb-1">Icon name</label>
-          <input
-            className="input-field"
-            placeholder="e.g. bus, heart, file-text"
-            value={icon}
-            onChange={(e) => setIcon(e.target.value)}
-          />
-        </div>
+        <IconField value={icon} onChange={setIcon} />
         <div>
           <label className="block text-xs font-medium text-gray-400 mb-1">Type</label>
           <select
@@ -670,15 +766,7 @@ function AddLinkForm({ onAdd }: { onAdd: (data: any) => void }) {
         onChange={(e) => setDescription(e.target.value)}
       />
       <div className="grid grid-cols-2 gap-3">
-        <div>
-          <label className="block text-xs font-medium text-white/40 mb-1">Icon name</label>
-          <input
-            className="input-field"
-            placeholder="e.g. bus, heart, file-text"
-            value={icon}
-            onChange={(e) => setIcon(e.target.value)}
-          />
-        </div>
+        <IconField value={icon} onChange={setIcon} dark />
         <div>
           <label className="block text-xs font-medium text-white/40 mb-1">Type</label>
           <select

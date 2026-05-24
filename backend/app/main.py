@@ -8,6 +8,7 @@ from sqlalchemy import text
 
 from app.database import Base, engine, SessionLocal
 from app.config import get_settings
+from app.icon_catalog import ALLOWED_LINK_ICON_IDS, DEFAULT_LINK_ICON_ID
 from app.models import Link, SiteConfig, SocialLink
 from app.routers import (
     links_router,
@@ -133,6 +134,16 @@ def init_db():
             logger.info("Seeding site config...")
             for key, value in SEED_CONFIG.items():
                 db.add(SiteConfig(key=key, value=value))
+            db.commit()
+
+        normalized = 0
+        for link in db.query(Link).all():
+            icon = (link.icon or "").strip().lower()
+            if not icon or icon not in ALLOWED_LINK_ICON_IDS:
+                link.icon = DEFAULT_LINK_ICON_ID
+                normalized += 1
+        if normalized:
+            logger.info("Normalized %s links with unsupported icon ids", normalized)
             db.commit()
     finally:
         db.close()

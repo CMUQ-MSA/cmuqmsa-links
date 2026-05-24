@@ -91,7 +91,7 @@ export default function PublicPage() {
         {/* QR code */}
         {pageUrl && (
           <div className="flex justify-center mt-4">
-            <QrCodeButton pageUrl={pageUrl} />
+            <QrCodeButton pageUrl={pageUrl} color={config.primary_color} />
           </div>
         )}
 

@@ -83,7 +83,13 @@ async def serve_file(filename: str):
     filepath = _safe_path(filename)
     if not os.path.isfile(filepath):
         raise HTTPException(status_code=404, detail="File not found")
-    return FileResponse(filepath, headers={"X-Content-Type-Options": "nosniff"})
+    return FileResponse(
+        filepath,
+        headers={
+            "X-Content-Type-Options": "nosniff",
+            "Cache-Control": "public, max-age=31536000, immutable",
+        },
+    )
 
 
 @router.delete("/{filename}", status_code=204)
