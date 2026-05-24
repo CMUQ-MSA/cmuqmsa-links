@@ -18,6 +18,7 @@ from app.routers import (
     uploads_router,
     qr_router,
     public_router,
+    spa_router,
 )
 
 settings = get_settings()
@@ -214,3 +215,8 @@ async def health_check():
             "uploads": "ok" if uploads_ok else "error",
         },
     )
+
+
+# SPA shell catch-all — MUST be registered last so /api/* and the explicit
+# health route above take precedence over the {full_path:path} matcher.
+app.include_router(spa_router)

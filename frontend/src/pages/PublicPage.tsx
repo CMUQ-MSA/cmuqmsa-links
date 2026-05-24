@@ -14,13 +14,27 @@ import { Loader2 } from "lucide-react";
 const FALLBACK_PRIMARY = "#990000";
 const FALLBACK_ACCENT = "#D4AF37";
 
+// Read server-injected bootstrap synchronously so the first React render
+// already has data. The backend's SPA shell route (spa.py) puts this on
+// `window` before the JS bundle even parses. If it's missing (older cached
+// HTML, dev mode, partial deploy) we fall back to the fetch path below.
+const initialBootstrap =
+  typeof window !== "undefined" ? window.__BOOTSTRAP__ : undefined;
+
 export default function PublicPage() {
-  const [links, setLinks] = useState<Link[] | null>(null);
-  const [config, setConfig] = useState<SiteConfig | null>(null);
-  const [socials, setSocials] = useState<SocialLinkType[] | null>(null);
+  const [links, setLinks] = useState<Link[] | null>(
+    initialBootstrap?.links ?? null,
+  );
+  const [config, setConfig] = useState<SiteConfig | null>(
+    initialBootstrap?.config ?? null,
+  );
+  const [socials, setSocials] = useState<SocialLinkType[] | null>(
+    initialBootstrap?.socials ?? null,
+  );
   const [error, setError] = useState("");
 
   useEffect(() => {
+    if (initialBootstrap) return; // already populated synchronously
     getBootstrap()
       .then(({ config: c, links: l, socials: s }) => {
         setConfig(c);

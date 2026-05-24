@@ -5,6 +5,7 @@ from app.routers.socials import router as socials_router
 from app.routers.uploads import router as uploads_router
 from app.routers.qr import router as qr_router
 from app.routers.public import router as public_router
+from app.routers.spa import router as spa_router
 
 __all__ = [
     "links_router",
@@ -14,4 +15,5 @@ __all__ = [
     "uploads_router",
     "qr_router",
     "public_router",
+    "spa_router",
 ]
